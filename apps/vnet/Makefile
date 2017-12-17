@@ -1,5 +1,5 @@
 PROJECT = vnet
-PROJECT_DESCRIPTION = New project
+PROJECT_DESCRIPTION = Virtue Network Component
 PROJECT_VERSION = 0.1.0
 
 include ../../erlang.mk
