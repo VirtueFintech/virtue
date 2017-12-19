@@ -21,21 +21,17 @@
 
 -record(state, { pow :: vdag_pow() }).
 
-%% This POW is purely based on Hashcash by Adam Beck.
-%% 
-%% X-Hashcash: 1:20:1303030600:adam@cypherspace.org::McMybZIhxKXu57jd:ckvi
+%% This POW is purely based on Hashcash by Adam Beck, modified of course.
 %% The header contains:
-%%   ver: Hashcash format version, 1 (which supersedes version 0).
-%%   bits: Number of "partial pre-image" (zero) bits in the hashed code.
-%%   date: The time that the message was sent, in the format YYMMDD[hhmm[ss]].
-%%   resource: Resource data string being transmitted, e.g., an IP address or email address.
-%%   ext: Extension (optional; ignored in version 1).
-%%   rand: String of random characters, encoded in base-64 format.
-%%   counter: Binary counter (up to 220), encoded in base-64 format.
+%%  version: 1
+%%  bits: 20 (fixed)
+%%  hash: base58 encoded of the hash
+%%  nonce: base58 encoded of the nonce
 %%
-%% > echo -n 1:52:380119:calvin@comics.net:::9B760005E92F0DAE | openssl sha1
-%% > 0000000000000756af69e2ffbdb930261873cd71
+%% The full record looks like:
+%%    <<"1:20:3yMApqCuCjXDWPrbjfR5mjCPTHqFG8Pux1TxQrEM35jj:2dhj5F">>
 %%
+
 %% API.
 
 -spec start_link() -> {ok, pid()}.
@@ -88,6 +84,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% =============================================================================
 %% private functions
+%% =============================================================================
 %%
 calc_nonce(Res) ->
   Counter = vutils_b58:encode(crypto:strong_rand_bytes(4)),
