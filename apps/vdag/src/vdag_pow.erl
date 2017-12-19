@@ -5,7 +5,8 @@
 
 %% API.
 -export([start_link/0]).
--export ([find_nonce/2]).
+-export ([find_nonce/1]).
+-export ([verify_nonce/2]).
 
 %% gen_server.
 -export([init/1]).
@@ -15,7 +16,8 @@
 -export([terminate/2]).
 -export([code_change/3]).
 
--define(SERVER, ?MODULE).
+-define (SERVER, ?MODULE).
+-define (BITS, 20).
 
 -record(state, { pow :: vdag_pow() }).
 
@@ -40,22 +42,34 @@
 start_link() ->
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-find_nonce(Hash, Bits) when is_binary(Hash), is_integer(Bits) ->
-  case catch gen_server:call(?SERVER, {find_nonce, Hash, Bits}, 5000) of
+find_nonce(Hash) when is_binary(Hash) ->
+  case catch gen_server:call(?SERVER, {find_nonce, Hash}, 5000) of
     {'EXIT', _} -> {error, timeout};
     Result       -> Result
   end.
+
+verify_nonce(Hash, Work) when is_binary(Hash), is_binary(Work) ->
+  gen_server:call(?SERVER, {verify_nonce, Hash, Work}).
 
 %% gen_server.
 
 init([]) ->
 	{ok, #state{}}.
 
-handle_call({find_nonce, Hash, Bits}, _From, State) ->
+handle_call({find_nonce, Hash}, _From, State) ->
   % {ok, Date} = tempo:format(<<"%Y%d%m">>, {now, erlang:timestamp()}),
-  Res = <<"1:", Bits, ":", Hash/binary, ":">>,
+  Res = <<"1:", ?BITS, ":", Hash/binary, ":">>,
   % ?INFO("find_nonce: Res = ~p", [Res]),
-  {reply, {ok, calc_nonce(Res, Bits)}, State};
+  {reply, {ok, calc_nonce(Res)}, State};
+
+handle_call({verify_nonce, Hash, Work}, _From, State) ->
+  Res = <<"1:", ?BITS, ":", Hash/binary, ":", Work/binary>>,
+  Proof =
+    case crypto:hash(sha256, Res) of
+      <<0:?BITS, _/bitstring>> -> {ok, true};
+      _ -> {error, false}
+    end,
+  {reply, Proof, State};
 
 handle_call(_Request, _From, State) ->
 	{reply, ignored, State}.
@@ -75,14 +89,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% =============================================================================
 %% private functions
 %%
-calc_nonce(Res, Bits) ->
+calc_nonce(Res) ->
   Counter = vutils_b58:encode(crypto:strong_rand_bytes(4)),
-  % ?INFO("Res: ~p, Counter: ~p", [Res, Counter]),
   R1 = << Res/binary, Counter/binary >>,
-  % ?INFO("R1: ~p", [R1]), %vutils_list:from_bin(R1)]),
   H1 = crypto:hash(sha256, R1),
-  % ?INFO("Hash of Resource: ~p", [H1]),
   case H1 of
-    <<0:Bits, _/bitstring>> -> {Counter};
-    _    -> calc_nonce(Res, Bits)
+    <<0:?BITS, _/bitstring>> -> Counter;
+    _  -> calc_nonce(Res)
   end.
