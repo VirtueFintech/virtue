@@ -21,9 +21,11 @@
 -export([terminate/2]).
 -export([code_change/3]).
 
--define(SERVER, ?MODULE).
--define(CURVE_SPEC, secp256k1).
--define(SHA, sha256).
+-define (SERVER, ?MODULE).
+-define (ALGO, ecdsa).
+-define (CURVE_SPEC, secp256k1).
+-define (SHA, sha256).
+-define (RIPEMD, ripemd160).
 
 -record(state, {
 }).
@@ -90,15 +92,15 @@ handle_call({gen_keys, PrivKey}, _From, State) ->
 
 handle_call({sign, Message, Priv}, _From, State) ->
   Key = from_base58(Priv),
-  Msg = crypto:sign(ecdsa, sha256, crypto:hash(sha256, Message), [Key, ?CURVE_SPEC]),
+  Msg = crypto:sign(?ALGO, ?SHA, crypto:hash(?SHA, Message), [Key, ?CURVE_SPEC]),
   Msg58 = to_base58(Msg),
   {reply, {ok, Msg58}, State};
 
 handle_call({verify, Message, Signature, Pub}, _From, State) ->
   Bin = from_base58(Signature),
   Key = from_base58(Pub),
-  M2 = crypto:hash(sha256, Message),
-  Status = crypto:verify(ecdsa, sha256, M2, Bin, [Key, ?CURVE_SPEC]),
+  M2 = crypto:hash(?SHA, Message),
+  Status = crypto:verify(?ALGO, ?SHA, M2, Bin, [Key, ?CURVE_SPEC]),
   {reply, {ok, Status}, State};
 
 handle_call({parse_address, Pub}, _From, State) ->
@@ -110,14 +112,14 @@ handle_call({parse_address, Pub}, _From, State) ->
 
 handle_call({gen_address, Pub}, _From, State) ->
   Bin = from_base58(Pub),
-  B1 = crypto:hash(ripemd160, crypto:hash(sha256, Bin)),
+  B1 = crypto:hash(?RIPEMD, crypto:hash(?SHA, Bin)),
 
   %% starts with V
   B2 = <<70, B1/binary>>,
 
   %% do Base58Check 
   %  double hash it, and take the checksum
-  <<Chk:4/bytes, _/binary>> = crypto:hash(sha256, crypto:hash(sha256, B2)),
+  <<Chk:4/bytes, _/binary>> = crypto:hash(?SHA, crypto:hash(?SHA, B2)),
   B3 = <<B2/binary, Chk/binary>>,
   {reply, {ok, to_base58(B3)}, State};
 
@@ -125,7 +127,7 @@ handle_call({to_wif, PrivKey}, _From, State) ->
   Bin = from_base58(PrivKey),
   %% 0x80 - main net, 0xef - testnet
   B1 = <<80, Bin/binary>>,
-  <<Chk:4/bytes, _/binary>> = crypto:hash(sha256, crypto:hash(sha256, B1)),
+  <<Chk:4/bytes, _/binary>> = crypto:hash(?SHA, crypto:hash(?SHA, B1)),
   B2 = <<B1/binary, Chk/binary>>,
   {reply, {ok, to_base58(B2)}, State};
 
