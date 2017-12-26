@@ -10,3 +10,10 @@ LOCAL_DEPS = vlogger vdag vnet vkey vdata vtime \
 						 mnesia crypto public_key inets sasl
 
 include erlang.mk
+
+test: vdag_test
+
+vdag_test:
+	make -C apps/vdag eunit t=vdag
+
+

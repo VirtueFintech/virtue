@@ -26,9 +26,12 @@
 -author ("Hisham Ismail <mhishami@gmail.com>").
 
 -include ("vdag.hrl").
+-include_lib ("vdata/include/vdata.hrl").
 
 %% API.
--export([start_link/0]).
+-export ([start_link/0]).
+-export ([sign_txout/2]).
+-export ([sign_trx/1]).
 
 %% gen_server.
 -export([init/1]).
@@ -49,13 +52,60 @@
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+-spec sign_txout(TxOut :: v_txout(), PrivKey :: binary()) -> {ok, v_txout()}.
+sign_txout(TxOut, PrivKey) ->
+  gen_server:call(?SERVER, {sign_txout, TxOut, PrivKey}).
+
+-spec sign_trx(Trx :: v_transaction()) -> {ok, v_transaction()}.
+sign_trx(Trx) ->
+  gen_server:call(?SERVER, {sign_trx, Trx}).
+
 %% gen_server.
 
 init([]) ->
   ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
   process_flag(trap_exit, true),
+  ok = application:ensure_started(vtime),
+  ok = application:ensure_started(vkey),
   {ok, #state{}}.
 
+handle_call({sign_txout, TxOut, Priv}, _From, State) ->
+  % create the signature first
+  Sig = bert:encode(#{from => TxOut#v_txout.from,
+                      to => TxOut#v_txout.to,
+                      value => TxOut#v_txout.value}),
+  {ok, SigHash} = vkey_server:sign(Sig, Priv),
+  OutSig = bert:encode(#{index => TxOut#v_txout.index, 
+                         signingPubKey => TxOut#v_txout.signingPubKey, 
+                         signature => SigHash}),
+  {ok, OutSigHash} = vkey_server:hash(OutSig),
+  FinalTxOut = TxOut#v_txout{hash = OutSigHash, signature = SigHash},
+  {reply, {ok, FinalTxOut}, State};
+
+handle_call({sign_trx, Trx}, _From, State) ->
+  {ok, Time} = vtime_server:time(),
+
+  % get the hash of the appended list, if any
+  F = fun(X, Accu) ->
+        {ok, H} = vkey_server:hash(bert:encode(X)),
+        <<H/binary, Accu/binary>>
+      end,
+  InputHash = lists:foldr(F, <<"">>, Trx#v_transaction.inputs),
+  OutputHash = lists:foldr(F, <<"">>, Trx#v_transaction.outputs),
+  Tmp = bert:encode(#{
+      msgType => Trx#v_transaction.msgType,
+      inputHash => InputHash,
+      outputHash => OutputHash,
+      fee => Trx#v_transaction.fee,
+      sequence => Trx#v_transaction.sequence,
+      timestamp => Time
+    }),
+  {ok, TrxHash} = vkey_server:hash(Tmp),
+  ReplyTrx = Trx#v_transaction{
+    txHash = TrxHash, inputHash = InputHash, outputHash = OutputHash,
+    timestamp = Time
+  },
+  {reply, {ok, ReplyTrx}, State};
 
 handle_call(_Request, _From, State) ->
   {reply, ignored, State}.
@@ -72,20 +122,3 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
--ifdef(TEST).
-
--include_lib("eunit/include/eunit.hrl").
--include_lib("vdata/include/vdata.hrl").
--compile(export_all).
-
-gen_vertices_test_() ->
-  G = digraph:new([acyclic]),
-  Genesis = <<"A new begining - trust is earned, not given">>,
-  GHash = vkey_server:hash(Genesis),
-  ?_assert(32 =:= size(GHash)).
-  
-dummy_test_() ->
-  A = 1,
-  ?_assert(A =:= 1).
-
--endif.

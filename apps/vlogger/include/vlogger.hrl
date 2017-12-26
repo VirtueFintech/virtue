@@ -21,6 +21,9 @@
 %% SOFTWARE.
 %% 
 %% 
+-ifndef (vlogger).
+-define (vlogger, init).
+
 -define(DEBUG(Text), lager:log(debug, ?MODULE, "~p:~p: " ++ Text, [?MODULE, ?LINE])).
 -define(DEBUG(Text, Args), lager:log(debug, ?MODULE, "~p:~p: " ++ Text, [?MODULE, ?LINE | Args])).
 
@@ -32,3 +35,5 @@
 
 -define(ERROR(Text), lager:log(error, ?MODULE, "~p:~p: " ++ Text, [?MODULE, ?LINE])).
 -define(ERROR(Text, Args), lager:log(error, ?MODULE, "~p:~p: " ++ Text, [?MODULE, ?LINE | Args])).
+
+-endif.
