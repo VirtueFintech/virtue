@@ -20,7 +20,7 @@
 -define (SERVER, ?MODULE).
 -define (BITS, 20).
 
--record(state, { pow :: vdag_pow() }).
+-record(state, {}).
 
 %% This POW is purely based on Hashcash by Adam Beck, modified of course.
 %% The header contains:
