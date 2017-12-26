@@ -21,5 +21,5 @@
 %% SOFTWARE.
 %% 
 %% 
--include ("logger.hrl").
+-include_lib ("vlogger/include/vlogger.hrl").
 -include ("records.hrl").

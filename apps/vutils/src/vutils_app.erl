@@ -20,7 +20,8 @@
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 %% SOFTWARE.
 %% 
-%% -module(vutils_app).
+%% 
+-module(vutils_app).
 -behaviour(application).
 -author ("Hisham Ismail <mhishami@gmail.com>").
 

@@ -25,6 +25,8 @@
 -behaviour(gen_server).
 -author ("Hisham Ismail <mhishami@gmail.com>").
 
+-include ("vtime.hrl").
+
 %% API.
 -export ([start_link/0]).
 -export ([time/0]).

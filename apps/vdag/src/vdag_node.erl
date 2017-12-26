@@ -21,20 +21,71 @@
 %% SOFTWARE.
 %% 
 %% 
--module(vdag_sup).
--behaviour(supervisor).
+-module(vdag_node).
+-behaviour(gen_server).
 -author ("Hisham Ismail <mhishami@gmail.com>").
 
+-include ("vdag.hrl").
+
+%% API.
 -export([start_link/0]).
+
+%% gen_server.
 -export([init/1]).
+-export([handle_call/3]).
+-export([handle_cast/2]).
+-export([handle_info/2]).
+-export([terminate/2]).
+-export([code_change/3]).
 
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+-define (SERVER, ?MODULE).
 
+-record(state, {
+}).
+
+%% API.
+
+-spec start_link() -> {ok, pid()}.
 start_link() ->
-  supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+%% gen_server.
 
 init([]) ->
-  Pow = ?CHILD(vdag_pow, worker),
-  Node = ?CHILD(vdag_node, worker),
-  Procs = [Pow, Node],
-  {ok, {{one_for_one, 1, 5}, Procs}}.
+  ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
+  process_flag(trap_exit, true),
+  {ok, #state{}}.
+
+
+handle_call(_Request, _From, State) ->
+  {reply, ignored, State}.
+
+handle_cast(_Msg, State) ->
+  {noreply, State}.
+
+handle_info(_Info, State) ->
+  {noreply, State}.
+
+terminate(_Reason, _State) ->
+  ok.
+
+code_change(_OldVsn, State, _Extra) ->
+  {ok, State}.
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+-include_lib("vdata/include/vdata.hrl").
+-compile(export_all).
+
+gen_vertices_test_() ->
+  G = digraph:new([acyclic]),
+  Genesis = <<"A new begining - trust is earned, not given">>,
+  GHash = vkey_server:hash(Genesis),
+  ?_assert(32 =:= size(GHash)).
+  
+dummy_test_() ->
+  A = 1,
+  ?_assert(A =:= 1).
+
+-endif.

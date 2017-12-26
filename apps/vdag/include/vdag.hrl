@@ -21,7 +21,7 @@
 %% SOFTWARE.
 %% 
 %% 
--include ("logger.hrl").
+-include_lib ("vlogger/include/vlogger.hrl").
 
 %% This POW is purely based on Hashcash by Adam Beck, modified of course.
 %% The header contains:
