@@ -15,6 +15,8 @@
 -export([terminate/2]).
 -export([code_change/3]).
 
+-define (SERVER, ?MODULE).
+
 -record(state, {
 }).
 
@@ -22,24 +24,62 @@
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-	gen_server:start_link(?MODULE, [], []).
+  ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %% gen_server.
 
 init([]) ->
-	{ok, #state{}}.
+  DBs = [
+    {v_txin, record_info(fields, v_txin)},
+    {v_txout, record_info(fields, v_txout)},
+    {v_transaction, record_info(fields, v_transaction)}
+  ],
+  setup_db(DBs),
+  {ok, #state{}}.
 
 handle_call(_Request, _From, State) ->
-	{reply, ignored, State}.
+  {reply, ignored, State}.
 
 handle_cast(_Msg, State) ->
-	{noreply, State}.
+  {noreply, State}.
 
 handle_info(_Info, State) ->
-	{noreply, State}.
+  {noreply, State}.
 
 terminate(_Reason, _State) ->
-	ok.
+  ok.
 
 code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
+  {ok, State}.
+
+%% ------------------------------------------------------------------
+%% Internal Function Definitions
+%% ------------------------------------------------------------------
+setup_db(Databases) ->
+  setup_db(Databases, false).
+
+setup_db(Databases, Reset) ->
+  application:stop(mnesia),
+  case Reset of
+    true ->
+      mnesia:delete_schema([node()|nodes()]);
+    _ ->
+      ok
+  end,
+  mnesia:create_schema([node()|nodes()]),
+  ok = application:start(mnesia),
+  mnesia_eleveldb:register(),
+  create(Databases).
+
+create([{Table, Fields}|Rest]) ->
+  create_table(Table, Fields),
+  create(Rest);
+create([]) -> ok.
+
+create_table(Table, Fields) ->
+  mnesia:create_table(Table, [
+    {attributes, Fields},
+    {leveldb_copies, [node()]},
+    {type, ordered_set}]),
+  mnesia:wait_for_tables([Table], 1000).
