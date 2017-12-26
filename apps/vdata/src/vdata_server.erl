@@ -25,6 +25,7 @@
 -spec start_link() -> {ok, pid()}.
 start_link() ->
   ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
+  process_flag(trap_exit, true),
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %% gen_server.

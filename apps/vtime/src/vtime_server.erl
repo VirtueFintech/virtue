@@ -24,7 +24,7 @@
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 time() ->
   gen_server:call(?SERVER, {time}).
@@ -32,24 +32,27 @@ time() ->
 %% gen_server.
 
 init([]) ->
+  ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
+  process_flag(trap_exit, true),
+
   % TODO: fetch time from time server, and added delta here.
-	{ok, #state{delta=0}}.
+  {ok, #state{delta=0}}.
 
 handle_call({time}, _From, State = #state{delta=Delta}) ->
   Time = erlang:universaltime_to_posixtime(erlang:universaltime()),
   {reply, {ok, Time + Delta}, State};
   
 handle_call(_Request, _From, State) ->
-	{reply, ignored, State}.
+  {reply, ignored, State}.
 
 handle_cast(_Msg, State) ->
-	{noreply, State}.
+  {noreply, State}.
 
 handle_info(_Info, State) ->
-	{noreply, State}.
+  {noreply, State}.
 
 terminate(_Reason, _State) ->
-	ok.
+  ok.
 
 code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
+  {ok, State}.

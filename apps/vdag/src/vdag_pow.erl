@@ -37,7 +37,7 @@
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 find_nonce(Hash) when is_binary(Hash) ->
   case catch gen_server:call(?SERVER, {find_nonce, Hash}, 5000) of
@@ -51,7 +51,9 @@ verify_nonce(Hash, Work) when is_binary(Hash), is_binary(Work) ->
 %% gen_server.
 
 init([]) ->
-	{ok, #state{}}.
+  ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
+  process_flag(trap_exit, true),
+  {ok, #state{}}.
 
 handle_call({find_nonce, Hash}, _From, State) ->
   % {ok, Date} = tempo:format(<<"%Y%d%m">>, {now, erlang:timestamp()}),
@@ -69,19 +71,19 @@ handle_call({verify_nonce, Hash, Work}, _From, State) ->
   {reply, Proof, State};
 
 handle_call(_Request, _From, State) ->
-	{reply, ignored, State}.
+  {reply, ignored, State}.
 
 handle_cast(_Msg, State) ->
-	{noreply, State}.
+  {noreply, State}.
 
 handle_info(_Info, State) ->
-	{noreply, State}.
+  {noreply, State}.
 
 terminate(_Reason, _State) ->
-	ok.
+  ok.
 
 code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
+  {ok, State}.
 
 %% =============================================================================
 %% private functions

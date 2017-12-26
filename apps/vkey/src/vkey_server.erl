@@ -2,6 +2,8 @@
 -behaviour(gen_server).
 -author ("Hisham Ismail <mhishami@gmail.com>").
 
+-include ("vkey.hrl").
+
 %% API.
 -export([start_link/0]).
 -export([gen_keys/0]).
@@ -76,6 +78,8 @@ dhash(Data) when is_binary(Data) ->
 %% gen_server.
 
 init([]) ->
+  ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
+  process_flag(trap_exit, true),
   {ok, #state{}}.
 
 handle_call({gen_keys}, _From, State) ->

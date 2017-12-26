@@ -56,7 +56,7 @@ remove(Type, Node) ->
 %% gen_server.
 
 init([]) ->
-  ?INFO("~p starting...", [?SERVER]),
+  ?INFO("Module ~p started on node ~p~n", [?SERVER, node()]),
   process_flag(trap_exit, true),
   ets:new(?MODULE, [set, named_table]),
   {ok, #state{}}.
