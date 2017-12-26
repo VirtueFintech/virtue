@@ -1,4 +1,5 @@
 -module (vutils_list).
+-author ("Hisham Ismail <mhishami@gmail.com>").
 
 -export ([from_bin/1]).
 -export ([from_integer/1]).

@@ -1,4 +1,5 @@
 -module (vutils_b58).
+-author ("Hisham Ismail <mhishami@gmail.com>").
 
 -export ([decode/1]).
 -export ([encode/1]).

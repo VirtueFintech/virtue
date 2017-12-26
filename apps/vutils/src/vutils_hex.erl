@@ -1,4 +1,5 @@
 -module (vutils_hex).
+-author ("Hisham Ismail <mhishami@gmail.com>").
 
 -export ([bin_to_hex/1]). 
 -export ([hex_to_bin/1]).

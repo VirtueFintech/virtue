@@ -1,5 +1,6 @@
 -module(vdag_pow).
 -behaviour(gen_server).
+-author ("Hisham Ismail <mhishami@gmail.com>").
 
 -include("vdag.hrl").
 
