@@ -213,36 +213,47 @@ simple_dag_test_() ->
   T1 = #{from => "V0", to => "V1", value => 1.0e5},   %% 100k
   T2 = #{from => "V0", to => "V2", value => 1.0e4},   %% 10k
   T3 = #{from => "V2", to => "V3", value => 3.0e3},   %% 3k
-  T41 = #{from => "V1", to => "V4", value => 1.0e4},  %% 10k
-  T4 = #{from => "V3", to => "V4", value => 1.0e3},   %% 1k
-  T5 = #{from => "V4", to => "V5", value => 1.0e2},   %% 100
+  T4 = #{from => "V1", to => "V4", value => 1.0e4},  %% 10k
+  T5 = #{from => "V3", to => "V4", value => 1.0e3},   %% 1k
+  T6 = #{from => "V4", to => "V5", value => 1.0e2},   %% 100
 
-  G = digraph:new([acyclic]),
+  G = digraph:new([acyclic, protected]),
 
-  % create the vertex
-  V0 = digraph:add_vertex(G, T0),
-  V1 = digraph:add_vertex(G, T1),
-  V2 = digraph:add_vertex(G, T2),
-  V3 = digraph:add_vertex(G, T3),
-  V41 = digraph:add_vertex(G, T41),
-  V4 = digraph:add_vertex(G, T4),
-  V5 = digraph:add_vertex(G, T5),
+  % create the vertex, for rcpt (to)
+  digraph:add_vertex(G, "V0", T0),
+  digraph:add_vertex(G, "V1", T1),
+  digraph:add_vertex(G, "V2", T2),
+  digraph:add_vertex(G, "V3", T3),
+  digraph:add_vertex(G, "V4", T4),
+  digraph:add_vertex(G, "V4", T5),
+  digraph:add_vertex(G, "V5", T6),
 
-  % create the edges
-  digraph:add_edge(G, V0, V1),
-  digraph:add_edge(G, V1, V41),
-  digraph:add_edge(G, V0, V2),
-  digraph:add_edge(G, V2, V3),
-  digraph:add_edge(G, V3, V4),
-  digraph:add_edge(G, V4, V5),
+  % create the edges (txHash, from, to)
+  digraph:add_edge(G, "tx0", "V0", "V0", "genesis"),
+  digraph:add_edge(G, "tx1", "V0", "V1", []),
+  digraph:add_edge(G, "tx2", "V0", "V2", []),
+  digraph:add_edge(G, "tx3", "V2", "V3", []),
+  digraph:add_edge(G, "tx4", "V1", "V4", []),
+  digraph:add_edge(G, "tx5", "V3", "V4", []),
+  digraph:add_edge(G, "tx6", "V4", "V5", []),
   [
     ?_assert(1 =:= 1),
-    ?_assert([V41, V1, V5, V4, V3, V2, V0] =:= digraph_utils:reachable([V0], G)),
-    ?_assert([V41, V1]        =:= digraph_utils:reachable([V1], G)),
-    ?_assert([V5, V4, V3, V2] =:= digraph_utils:reachable([V2], G)),
-    ?_assert([V5, V4, V3]     =:= digraph_utils:reachable([V3], G)),
-    ?_assert([V5, V4]         =:= digraph_utils:reachable([V4], G)),
-    ?_assert([V5]             =:= digraph_utils:reachable([V5], G))
+
+    % edges
+    ?_assert(["tx1","tx2"] =:= digraph:edges(G, "V0")),
+    ?_assert(["tx1","tx4"] =:= digraph:edges(G, "V1")),
+    ?_assert(["tx2","tx3"] =:= digraph:edges(G, "V2")),
+    ?_assert(["tx3","tx5"] =:= digraph:edges(G, "V3")),
+    ?_assert(["tx4","tx5","tx6"] =:= digraph:edges(G, "V4")),
+    ?_assert(["tx6"] =:= digraph:edges(G, "V5")),
+
+    % reachable
+    ?_assert(["V1","V5","V4","V3","V2","V0"] =:= digraph_utils:reachable(["V0"], G)),
+    ?_assert(["V5","V4","V1"]  =:= digraph_utils:reachable(["V1"], G)),
+    ?_assert(["V5","V4","V3","V2"] =:= digraph_utils:reachable(["V2"], G)),
+    ?_assert(["V5","V4","V3"] =:= digraph_utils:reachable(["V3"], G)),
+    ?_assert(["V5","V4"] =:= digraph_utils:reachable(["V4"], G)),
+    ?_assert(["V5"] =:= digraph_utils:reachable(["V5"], G))
   ].
 
 gen_dag_test_() ->
