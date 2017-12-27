@@ -198,6 +198,53 @@ prepare() ->
   ok = application:ensure_started(vkey),
   ok.
 
+  %% ok, now create some dags
+  %%                 +----+
+  %%          +-------| V1 |------------------------+
+  %%  +----+  |       +----+                        |
+  %%  | V0 |--+                                     |
+  %%  +----+  |       +----+         +----+       +----+      +----+
+  %%          +-------| V2 |---------| V3 |-------| V4 |------| V5 |
+  %%                  +----+         +----+       +----+      +----+
+  %%
+
+simple_dag_test_() ->
+  T0 = #{from => "V0", to => "V0", value => 1.0e24},
+  T1 = #{from => "V0", to => "V1", value => 1.0e5},   %% 100k
+  T2 = #{from => "V0", to => "V2", value => 1.0e4},   %% 10k
+  T3 = #{from => "V2", to => "V3", value => 3.0e3},   %% 3k
+  T41 = #{from => "V1", to => "V4", value => 1.0e4},  %% 10k
+  T4 = #{from => "V3", to => "V4", value => 1.0e3},   %% 1k
+  T5 = #{from => "V4", to => "V5", value => 1.0e2},   %% 100
+
+  G = digraph:new([acyclic]),
+
+  % create the vertex
+  V0 = digraph:add_vertex(G, T0),
+  V1 = digraph:add_vertex(G, T1),
+  V2 = digraph:add_vertex(G, T2),
+  V3 = digraph:add_vertex(G, T3),
+  V41 = digraph:add_vertex(G, T41),
+  V4 = digraph:add_vertex(G, T4),
+  V5 = digraph:add_vertex(G, T5),
+
+  % create the edges
+  digraph:add_edge(G, V0, V1),
+  digraph:add_edge(G, V1, V41),
+  digraph:add_edge(G, V0, V2),
+  digraph:add_edge(G, V2, V3),
+  digraph:add_edge(G, V3, V4),
+  digraph:add_edge(G, V4, V5),
+  [
+    ?_assert(1 =:= 1),
+    ?_assert([V41, V1, V5, V4, V3, V2, V0] =:= digraph_utils:reachable([V0], G)),
+    ?_assert([V41, V1]        =:= digraph_utils:reachable([V1], G)),
+    ?_assert([V5, V4, V3, V2] =:= digraph_utils:reachable([V2], G)),
+    ?_assert([V5, V4, V3]     =:= digraph_utils:reachable([V3], G)),
+    ?_assert([V5, V4]         =:= digraph_utils:reachable([V4], G)),
+    ?_assert([V5]             =:= digraph_utils:reachable([V5], G))
+  ].
+
 gen_dag_test_() ->
   prepare(),
   %% start vkey_server
