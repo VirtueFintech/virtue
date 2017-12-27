@@ -31,27 +31,28 @@
 %%             |       | enum (msg, tx, data)   |
 %%             |       +------------------------+
 %%             |
-%%  +----------v--------------+            +------------------------+
-%%  | Transaction             |            | TxOutput               |
-%%  +-------------------------+            +------------------------+
-%%  | 1. txHash (2,3,5,7,8,9) |            | 1. index               |
-%%  | 2. msgType              |        +---+ 2. hash (1,6,7)        |
-%%  | 3. inputHash            |        |   | 3. from                |
-%%  | 4. inputs               <-----+  |   | 4. to                  |
-%%  | 5. outputHash           |     |  |   | 5. value               |
-%%  | 6. outputs              <-----+--+   | 6. signingPubKey       |
-%%  | 7. fee                  |     |      | 7. signature (3,4,5)   |
-%%  | 8. sequence             |     |      +------------------------+
-%%  | 9. timestamp            |     |
-%%  +-------------------------+     |      +------------------------+
-%%                                  |      | TxInput                |
-%%                                  |      +------------------------+
-%%                                  |      | 1. index               |
-%%                                  +------+ 2. prevHash            |
-%%                                         | 3. from                |
-%%                                         | 4. to                  |
-%%                                         | 5. value               |
-%%                                         +------------------------+
+%%  +----------v------------------+            +------------------------+
+%%  | Transaction                 |            | TxOutput               |
+%%  +-----------------------------+            +------------------------+
+%%  | 1.  txHash (3,4,5,7,8,9,10) |            | 1. index               |
+%%  | 2.  nonce                   |        +---+ 2. hash (1,6,7)        |
+%%  | 3.  msgType                 |        |   | 3. from                |
+%%  | 4.  inputHash               <-----+  |   | 4. to                  |
+%%  | 5.  inputs                  |     |  |   | 5. value               |
+%%  | 6.  outputHash              <-----+--+   | 6. signingPubKey       |
+%%  | 7.  outputs                 |     |      | 7. signature (3,4,5)   |
+%%  | 8.  fee                     |     |      +------------------------+
+%%  | 9.  sequence                |     |
+%%  | 10. timestamp               |     |
+%%  +-----------------------------+     |      +------------------------+
+%%                                      |      | TxInput                |
+%%                                      |      +------------------------+
+%%                                      |      | 1. index               |
+%%                                      +------+ 2. prevHash            |
+%%                                             | 3. from                |
+%%                                             | 4. to                  |
+%%                                             | 5. value               |
+%%                                             +------------------------+
 %%
 
 -type v_txtype() :: transfer | message | data.
@@ -62,7 +63,8 @@
   prevHash      :: binary(),
   from          :: binary(),
   to            :: binary(),
-  value         :: integer()
+  value         :: integer(),
+  in_backpack = #{}
 }).
 
 -type v_txin() :: #v_txin{}.
@@ -78,7 +80,8 @@
   to            :: binary(),
   value         :: integer(),
   signingPubKey :: binary(),
-  signature     :: binary()
+  signature     :: binary(),
+  out_backpack = #{}
 }).
 
 -type v_txout() :: #v_txout{}.
@@ -89,6 +92,7 @@
 
 -record (v_transaction, {
   txHash        :: binary(),
+  nonce         :: binary(),
   msgType       :: atom(),
   inputHash     :: binary(), 
   inputs        :: v_txins(),
@@ -96,7 +100,8 @@
   outputs       :: v_txouts(),
   fee           :: integer(), 
   sequence      :: integer(),
-  timestamp     :: integer()
+  timestamp     :: integer(),
+  tx_backpack = #{}
 }).
 -type v_transaction() :: #v_transaction{}.
 -export_type([v_transaction/0]).
